@@ -45,3 +45,6 @@ logs/
 
 # Local machine data, not part of the source tree
 .app-data/
+
+# Machine-local shortcuts
+*.lnk

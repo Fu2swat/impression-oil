@@ -139,7 +139,7 @@ class LocalDiffusersEngine(ImageEngine):
         if result.size != source.size:
             result = result.resize(source.size, Image.Resampling.LANCZOS)
 
-        out_path = outputs_dir() / f"{Path(source_path).stem}-印象油画-{seed}.jpg"
+        out_path = outputs_dir() / f"{Path(source_path).stem}-印象派油画-{seed}.jpg"
         result.save(out_path, format="JPEG", quality=95, subsampling=0)
         return out_path
 

@@ -1,12 +1,12 @@
-# 印象油画 0.0.1
+# 印象派油画生成 0.0.1
 
 [中文](README.md) | [English](README.en.md) | [Deutsch](README.de.md)
 
-Ein lokales, offline nutzbares Desktop-Programm: Öffnen Sie ein Foto auf Ihrem Rechner und wandeln Sie es mit einem Klick in ein impressionistisches Ölgemälde im Stil Monets um.
+Ein lokales, offline nutzbares Desktop-Programm: Öffnen Sie ein Foto auf Ihrem Rechner und erzeugen Sie mit einem Klick ein impressionistisches Ölgemälde.
 
 Die Arbeitsfläche zeigt links das Originalfoto und rechts das Gemälde. Klicken Sie auf **生成油画** (Ölgemälde erzeugen). Wenn Sie unzufrieden sind, prüft das Programm das Ergebnis anhand seiner Qualitätsliste und erzeugt es mit einem Korrekturhinweis neu; wenn Sie zufrieden sind, können Sie speichern. Sie müssen nicht vorher zwischen Porträt und Landschaft wählen — das Programm beurteilt das Foto selbst und wendet die passende Malweise an.
 
-Das ist kein Filter, kein „Ölmalerei-Shader“ und auch kein Postimpressionismus im Sinne van Goghs. Der Standardweg ist der Impressionismus Monets: Umgebungsfarbe, optische Mischung, weiche Kanten, die sich in die Luft auflösen, komplementäre Schatten. Die Komposition bleibt am Ausgangsfoto festgemacht.
+Das ist kein Filter und kein „Ölmalerei-Shader“. Es erzeugt impressionistische Ölgemälde: Umgebungsfarbe, optische Mischung, weiche Kanten, die sich in die Luft auflösen, komplementäre Schatten. Die Komposition bleibt am Ausgangsfoto festgemacht.
 
 ## Welche Bilder geeignet sind
 
@@ -34,7 +34,7 @@ Für ein halbwegs flüssiges Erzeugen sollten folgende Bedingungen erfüllt sein
 
 - Eine vollständige Benutzeroberfläche auf Chinesisch (Öffnen, Ziehen-und-Ablegen, Vergleich links/rechts, erneutes Erzeugen, Zurück zur Startansicht, Speichern).
 - Der Ablauf **满意 / 不满意** (Zufrieden / Unzufrieden): „Unzufrieden“ prüft Abweichungen in der Malweise und verrutschte Landschaft und erzeugt das Bild mit Korrekturhinweisen neu.
-- Eine lokale Engine aus SD 1.5 + ControlNet Tile + Monet-LoRA (zuerst Abhängigkeiten und Modelle wie unten installieren).
+- Eine lokale Engine aus SD 1.5 + ControlNet Tile + LoRA im impressionistischen Stil (zuerst Abhängigkeiten und Modelle wie unten installieren).
 - Stil-Prompts, Szenenerkennung, die Prüfliste und die Zustandssteuerung der Pipeline (durch Tests abgedeckt).
 
 **Modellgewichte liegen nicht in diesem Repository**
@@ -108,7 +108,7 @@ python -m impression_oil
 5. Klicken Sie auf **不满意**: Das Programm prüft das Ergebnis sofort am Ausgangsfoto (verklumpter Himmel, tote Lokalfarbe, harte ferne Berge, blumenfeldartige Stempel, Figuren wie aus einer Illustration, verrutschte Landschaft oder Komposition). Unten öffnet sich der Hinweis, dass nach der Korrekturliste geprüft und neu gemalt wird, in der Mitte steht „wird neu gemalt…“, und das ganze Bild wird mit Korrekturhinweisen erneut erzeugt (die verbesserte Malweise bleibt erhalten, verlorene oder verschobene Landschaft wird wieder an das Original gebunden). Wählen Sie erneut, wenn das neue Ergebnis da ist, bis Sie zufrieden sind.
 6. Sobald ein Ergebnis fertig ist, können Sie oben in der Leiste auf **回到初始界面** (Zurück zur Startansicht) klicken und kehren zur leeren Ablagefläche zurück. Bereits gespeicherte Gemälde bleiben auf diesem Rechner und werden nicht gelöscht.
 
-Der Speicher-Dialog trägt den Titel **保存油画** (Ölgemälde speichern). Der Standarddateiname sieht aus wie `originalname-印象油画.jpg`. Sie können JPEG oder PNG speichern.
+Der Speicher-Dialog trägt den Titel **保存油画** (Ölgemälde speichern). Der Standarddateiname sieht aus wie `originalname-印象派油画.jpg`. Sie können JPEG oder PNG speichern.
 
 ## Tests ausführen
 
@@ -121,4 +121,4 @@ Diese Tests benötigen weder die Modelle noch eine GPU.
 
 ## Version
 
-Die aktuelle Version ist **0.0.1**. Siehe `VERSION`, `pyproject.toml` und den Fenstertitel „印象油画 0.0.1“.
+Die aktuelle Version ist **0.0.1**. Siehe `VERSION`, `pyproject.toml` und den Fenstertitel „印象派油画生成 0.0.1“.

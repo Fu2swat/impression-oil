@@ -13,5 +13,5 @@ def test_version_is_0_0_1() -> None:
     assert ROOT.joinpath("VERSION").read_text(encoding="utf-8").strip() == "0.0.1"
     text = ROOT.joinpath("pyproject.toml").read_text(encoding="utf-8")
     assert 'version = "0.0.1"' in text
-    assert WINDOW_TITLE == "印象油画 0.0.1"
-    assert APP_NAME == "印象油画"
+    assert WINDOW_TITLE == "印象派油画生成 0.0.1"
+    assert APP_NAME == "印象派油画生成"

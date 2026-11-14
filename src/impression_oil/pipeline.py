@@ -102,7 +102,7 @@ class Pipeline:
 
     def default_save_name(self) -> str:
         stem = Path(self.source_path).stem if self.source_path else "照片"
-        return f"{stem}-印象油画.jpg"
+        return f"{stem}-印象派油画.jpg"
 
     # --- mutations ---
 

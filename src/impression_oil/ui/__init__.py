@@ -1,1 +1,1 @@
-"""Qt widgets for 印象油画."""
+"""Qt widgets for 印象派油画生成."""

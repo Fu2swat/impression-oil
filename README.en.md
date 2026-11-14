@@ -1,12 +1,12 @@
-# 印象油画 0.0.1
+# 印象派油画生成 0.0.1
 
 [中文](README.md) | [English](README.en.md) | [Deutsch](README.de.md)
 
-A local, offline desktop tool: open a photo on your computer and turn it into a Monet-style Impressionist oil painting in one click.
+A local, offline desktop tool: open a photo on your computer and generate an Impressionist oil painting in one click.
 
 The workbench shows the original photo on the left and the painting on the right. Click **生成油画** (Generate oil painting) to run it. If you are not satisfied, the app reviews the result against its painting-quality checklist and regenerates with a patch; if you are satisfied, you can save. You do not need to choose portrait or landscape first — the program judges the photo and applies the matching approach.
 
-This is not a filter, not an “oil-painting shader,” and not Van Gogh Post-Impressionism. The default path is Monet Impressionism: environmental color, optical mixing, soft edges dissolving into the air, complementary-color shadows, with the composition locked to the source photo.
+This is not a filter or an “oil-painting shader.” It generates Impressionist oil paintings: environmental color, optical mixing, soft edges dissolving into the air, complementary-color shadows, with the composition locked to the source photo.
 
 ## What kinds of images work
 
@@ -34,7 +34,7 @@ For reasonably smooth generation, you should have:
 
 - A complete Chinese-language interface (open, drag-and-drop, side-by-side preview, regenerate, return to the start screen, save).
 - A **满意 / 不满意** (Satisfied / Not satisfied) flow: Not satisfied runs a checklist for painting-quality gaps and scenery drift, then regenerates with patch prompts.
-- A local SD 1.5 + ControlNet Tile + Monet LoRA engine (install dependencies and models first, as below).
+- A local SD 1.5 + ControlNet Tile + Impressionist-style LoRA engine (install dependencies and models first, as below).
 - Style prompts, scene detection, the review checklist, and the pipeline state machine (covered by tests).
 
 **Model weights are not in this repository**
@@ -108,7 +108,7 @@ python -m impression_oil
 5. Click **不满意**: the app immediately reviews the result against the source (clumpy sky, dead local color, hard-edged distant mountains, stamped flower fields, illustration-like figures, scenery or composition drift). The footer expands to “reviewed with the patch checklist, regenerating,” the center shows “regenerating…,” and the whole image is painted again with patch prompts (keeping improved technique, while locking any lost or shifted scenery back to the source). Choose again when the new result appears, until you are satisfied.
 6. After a result is ready, you can also click **回到初始界面** (Return to start) in the top bar to go back to the empty drop-zone. Paintings you have already saved stay on this computer and are not deleted.
 
-The save dialog is titled **保存油画** (Save oil painting). The default file name looks like `original-name-印象油画.jpg`. You can save JPEG or PNG.
+The save dialog is titled **保存油画** (Save oil painting). The default file name looks like `original-name-印象派油画.jpg`. You can save JPEG or PNG.
 
 ## Run tests
 
@@ -121,4 +121,4 @@ These tests do not require the models or a GPU.
 
 ## Version
 
-The current version is **0.0.1**. See `VERSION`, `pyproject.toml`, and the window title “印象油画 0.0.1”.
+The current version is **0.0.1**. See `VERSION`, `pyproject.toml`, and the window title “印象派油画生成 0.0.1”.

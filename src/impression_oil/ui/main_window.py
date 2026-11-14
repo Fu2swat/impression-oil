@@ -480,8 +480,8 @@ class MainWindow(QWidget):
             self.banner.show_message(message)
             self._sync_chrome()
 
-        worker.finished.connect(ok)
-        worker.failed.connect(fail)
+        worker.finished.connect(ok, Qt.ConnectionType.QueuedConnection)
+        worker.failed.connect(fail, Qt.ConnectionType.QueuedConnection)
         thread.start()
         self._thread = thread
         self._worker = worker

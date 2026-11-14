@@ -29,3 +29,13 @@ def test_get_engine_stays_stub_without_models(tmp_path: Path, monkeypatch) -> No
     monkeypatch.delenv("IMPRESSION_OIL_BACKEND", raising=False)
     engine = get_engine(tmp_path / "models")
     assert isinstance(engine, StubEngine)
+def test_resize_for_model_uses_pillow_resampling() -> None:
+    from PIL import Image
+
+    from impression_oil.backends.local import _resize_for_model
+
+    image = Image.new("RGB", (1600, 900), (10, 20, 30))
+    out, size = _resize_for_model(image, max_edge=768)
+    assert max(size) <= 768
+    assert size[0] % 8 == 0 and size[1] % 8 == 0
+    assert out.size == size

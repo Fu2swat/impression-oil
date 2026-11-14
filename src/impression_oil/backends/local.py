@@ -192,11 +192,13 @@ def _with_trigger(prompt: str, trigger: str) -> str:
 
 
 def _resize_for_model(image, max_edge: int = 768):
+    from PIL import Image as PILImage
+
     width, height = image.size
     longest = max(width, height)
     scale = min(1.0, max_edge / float(longest))
     new_w = max(64, int(round(width * scale / 8.0) * 8))
     new_h = max(64, int(round(height * scale / 8.0) * 8))
     if (new_w, new_h) != (width, height):
-        image = image.resize((new_w, new_h), image.Resampling.LANCZOS)
+        image = image.resize((new_w, new_h), PILImage.Resampling.LANCZOS)
     return image, (new_w, new_h)

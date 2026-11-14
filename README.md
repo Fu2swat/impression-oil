@@ -6,44 +6,74 @@
 
 这不是滤镜或「油画着色器」工具，也不是梵高后期印象派。默认路径是莫奈印象派：环境色、光学混合、柔边溶入空气、补色阴影，构图锁在原照上。
 
+## 配置要求
+
+要比较顺畅地出图，建议满足下面这些条件：
+
+- **显卡**：NVIDIA 独立显卡，显存建议 8GB 或以上。已在 NVIDIA GeForce RTX 4060 笔记本显卡（8GB 显存）上验证可运行。默认按照片长边 768 出图；显存不足时会自动降到 512。
+- **目前不支持**：没有 NVIDIA 显卡，或只有核显、AMD 显卡、Apple 芯片的机器，这个版本还不能出图（推理走 CUDA）。
+- **系统与 Python**：Windows 10 或 11，Python 3.10 或更高版本（推荐 3.12）。
+- **硬盘**：请预留大约 8 到 10GB 空间。模型权重约 3.4GB，再加上 PyTorch CUDA 运行环境。
+- **网络**：第一次安装依赖和下载模型需要联网；装好之后可以离线使用。程序界面不会自动下载模型。
+
 ## 离线承诺
 
 - 选照片、出图、自查、保存都在本机完成，文件不会上传到网络。
 - 程序默认不会发起任何网络请求，也不会自动下载模型。
-- 安装好依赖（以及日后一次装好的本机模型）之后，没有网络也能使用。
+- 安装好依赖，并完成一次本机模型安装之后，没有网络也能使用。
 
-## 0.0.1 里有什么、还没有什么
+## 0.0.1 里有什么、没有什么
 
 **已经可以用**
 
 - 完整中文界面（打开、拖入、左右对照、再生成、保存）。
 - 「满意 / 不满意」流程：点不满意会按画法差距和景色走样逐项自查，再带着补丁提示重画。
+- 本机 SD 1.5 + ControlNet Tile + 莫奈 LoRA 出图引擎（需先按下文安装依赖和模型）。
 - 画法提示词、场景判断、自查清单和流水线状态机（可用测试验证）。
 
-**本机模型尚未包含**
+**仓库不附带模型权重**
 
-- 0.0.1 **不附带**扩散模型权重，因此还不能真正出油画。
-- 点「生成油画」时，界面会给出说明，但**不会自动开始下载**。
-- 本机模型是以后的一次性安装：把权重放到程序提供的 `models/` 目录（或应用数据目录中的 `models/`）后，即可在不改界面的前提下接入本地 img2img 引擎（例如日后在 NVIDIA GPU 上使用 diffusers）。
+- 模型文件大约 3.4GB，不包含在本仓库中，需要按下面的步骤自行下载到 `models/` 目录。
+- 点「生成油画」时，如果还没装模型，界面会给出说明，但**不会自动开始下载**。
 
 ## 安装依赖
 
-需要 Python 3.10 或更高版本（推荐 3.12）。
+需要 Python 3.10 或更高版本（推荐 3.12），以及一块可用的 NVIDIA 显卡。
 
 ```text
 cd impression-oil
 py -3 -m venv .venv
 .venv\Scripts\activate
-py -3 -m pip install -r requirements.txt
+python -m pip install -U pip
+python -m pip install -r requirements.txt
+python -m pip install torch==2.6.0 torchvision==0.21.0 --index-url https://download.pytorch.org/whl/cu124
+python -m pip install diffusers==0.43.0 transformers accelerate safetensors huggingface_hub peft
 ```
 
-也可以只安装运行时并按可编辑包安装：
+请从 PyTorch 官方 CUDA 12.4 索引安装 `torch`，不要安装 CPU 版本。Linux / macOS 把 `py -3` 换成 `python3`，激活脚本则是 `source .venv/bin/activate`。当前出图路径按 Windows + NVIDIA GPU 验证。
+
+也可以只安装界面运行时并按可编辑包安装（这样还不能出图）：
 
 ```text
-py -3 -m pip install -e .
+python -m pip install -e .
 ```
 
-Linux / macOS 把 `py -3` 换成 `python3`，激活脚本则是 `source .venv/bin/activate`。
+## 安装本机模型
+
+在已激活的虚拟环境中，于项目目录执行：
+
+```text
+python scripts/install_local_model.py
+```
+
+模型会下载到项目里的 `models/` 目录，约 3.4GB。如果访问 Hugging Face 不稳定，可先设置镜像后再运行：
+
+```text
+set HF_ENDPOINT=https://hf-mirror.com
+python scripts/install_local_model.py
+```
+
+只需要安装一次。装好后即可离线出图。第一次在软件里点「生成油画」时，加载模型大约需要一分钟，之后会快很多。
 
 ## 启动
 
@@ -53,15 +83,15 @@ Linux / macOS 把 `py -3` 换成 `python3`，激活脚本则是 `source .venv/bi
 run.bat
 ```
 
-`run.bat` 会优先使用 `py -3`，找不到再用 `python`。它会把 `src` 加入 `PYTHONPATH`，因此不必先安装包。
+`run.bat` 会优先使用项目里的 `.venv`，找不到再用 `py -3`，最后才用 `python`。它会把 `src` 加入 `PYTHONPATH`，因此不必先安装包。仓库里还有 `launch.vbs`，可用它创建不弹出命令行窗口的桌面快捷方式。
 
 也可以：
 
 ```text
-py -3 -m impression_oil
+python -m impression_oil
 ```
 
-（若未使用 `run.bat`，请先 `pip install -e .`，或自行设置 `PYTHONPATH=src`。）
+（若未使用 `run.bat`，请先激活虚拟环境，或自行设置 `PYTHONPATH=src`。）
 
 ## 「满意」和「不满意」怎么用
 
@@ -76,9 +106,11 @@ py -3 -m impression_oil
 ## 运行测试
 
 ```text
-py -3 -m pip install -r requirements.txt
-py -3 -m pytest
+python -m pip install -r requirements.txt
+python -m pytest
 ```
+
+这些测试不需要安装模型，也不需要 GPU。
 
 ## 版本
 

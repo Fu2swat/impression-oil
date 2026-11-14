@@ -91,9 +91,11 @@ class MainWindow(QWidget):
 
         self.open_btn = self._toolbar_button("打开照片")
         self.regen_btn = self._toolbar_button("再生成")
+        self.reset_btn = self._toolbar_button("回到初始界面")
         self.save_btn = self._toolbar_button("保存")
         self.open_btn.clicked.connect(self.open_photo)
         self.regen_btn.clicked.connect(self._on_generate)
+        self.reset_btn.clicked.connect(self._back_to_start)
         self.save_btn.clicked.connect(self.save_result)
 
         toolbar = QHBoxLayout()
@@ -101,6 +103,7 @@ class MainWindow(QWidget):
         toolbar.setSpacing(10)
         toolbar.addWidget(self.open_btn)
         toolbar.addWidget(self.regen_btn)
+        toolbar.addWidget(self.reset_btn)
         toolbar.addStretch(1)
         toolbar.addWidget(self.save_btn)
 
@@ -333,6 +336,22 @@ class MainWindow(QWidget):
         else:
             event.ignore()
 
+    def _back_to_start(self) -> None:
+        """Return the workbench to the empty drop-zone, without deleting saved files."""
+        if self._busy:
+            return
+        self.pipeline.release_engine()
+        self.pipeline.reset()
+        self.source_card.clear()
+        self.result_card.clear()
+        self.left_stack.setCurrentWidget(self.drop_zone)
+        self.right_stack.setCurrentWidget(self.placeholder)
+        self.feedback.reset()
+        self.footer.collapse()
+        self.banner.setVisible(False)
+        self._highlight_save(False)
+        self._sync_chrome()
+
     def _load_source(self, path: Path) -> None:
         try:
             self.pipeline.load_source(path)
@@ -519,6 +538,7 @@ class MainWindow(QWidget):
         busy = self._busy
         self.generate_btn.setEnabled(has_source and not busy)
         self.regen_btn.setEnabled(has_source and not busy)
+        self.reset_btn.setEnabled(has_result and not busy)
         self.save_btn.setEnabled(has_result and not busy)
         if not (self.pipeline.accepted and self.pipeline.saved_path is None):
             if not self.pipeline.accepted:

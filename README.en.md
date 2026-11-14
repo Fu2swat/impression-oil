@@ -8,6 +8,10 @@ The workbench shows the original photo on the left and the painting on the right
 
 This is not a filter, not an “oil-painting shader,” and not Van Gogh Post-Impressionism. The default path is Monet Impressionism: environmental color, optical mixing, soft edges dissolving into the air, complementary-color shadows, with the composition locked to the source photo.
 
+## What kinds of images work
+
+This version is intended only for real photographs taken with a camera, such as portraits, landscapes, and everyday snapshots. Animation stills, illustrations, anime or cartoon images, comics, screenshots, and pictures that are already drawings are not a good fit and will usually come out looking clearly wrong.
+
 ## Requirements
 
 For reasonably smooth generation, you should have:
@@ -28,7 +32,7 @@ For reasonably smooth generation, you should have:
 
 **Ready to use**
 
-- A complete Chinese-language interface (open, drag-and-drop, side-by-side preview, regenerate, save).
+- A complete Chinese-language interface (open, drag-and-drop, side-by-side preview, regenerate, return to the start screen, save).
 - A **满意 / 不满意** (Satisfied / Not satisfied) flow: Not satisfied runs a checklist for painting-quality gaps and scenery drift, then regenerates with patch prompts.
 - A local SD 1.5 + ControlNet Tile + Monet LoRA engine (install dependencies and models first, as below).
 - Style prompts, scene detection, the review checklist, and the pipeline state machine (covered by tests).
@@ -102,6 +106,7 @@ python -m impression_oil
 3. After generation, **满意** (Satisfied) and **不满意** (Not satisfied) appear under the result.
 4. Click **满意**: the result is marked as accepted, and you can click **保存** (Save) in the top right. If you have not saved yet, Save stays available as a reminder. Nothing is uploaded automatically.
 5. Click **不满意**: the app immediately reviews the result against the source (clumpy sky, dead local color, hard-edged distant mountains, stamped flower fields, illustration-like figures, scenery or composition drift). The footer expands to “reviewed with the patch checklist, regenerating,” the center shows “regenerating…,” and the whole image is painted again with patch prompts (keeping improved technique, while locking any lost or shifted scenery back to the source). Choose again when the new result appears, until you are satisfied.
+6. After a result is ready, you can also click **回到初始界面** (Return to start) in the top bar to go back to the empty drop-zone. Paintings you have already saved stay on this computer and are not deleted.
 
 The save dialog is titled **保存油画** (Save oil painting). The default file name looks like `original-name-印象油画.jpg`. You can save JPEG or PNG.
 

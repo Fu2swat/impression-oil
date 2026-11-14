@@ -79,6 +79,15 @@ class Pipeline:
             prepare()
             LOGGER.info("local engine ready")
 
+    def release_engine(self) -> None:
+        """Shut down the CUDA child so the window can safely show the result."""
+        close = getattr(self.engine, "close", None)
+        if callable(close):
+            try:
+                close()
+            except Exception:
+                LOGGER.exception("failed to release local engine")
+
     def can_generate(self) -> bool:
         return self.source_path is not None and self.state != AppState.GENERATING and self.state != AppState.REGENERATING
 

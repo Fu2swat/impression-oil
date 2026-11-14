@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import threading
+
 from pathlib import Path
 
-from PySide6.QtCore import QObject, QSize, QThread, Qt, Signal, Slot
-from PySide6.QtGui import QGuiApplication, QPixmap
+from PySide6.QtCore import QObject, QSize, QTimer, Qt, Signal, Slot
+from PySide6.QtGui import QGuiApplication, QImage, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
     QFileDialog,
@@ -45,42 +47,31 @@ OPEN_FILTER = "照片 (*.jpg *.jpeg *.png *.webp)"
 SAVE_FILTER = "JPEG (*.jpg *.jpeg);;PNG (*.png)"
 
 
-class _Worker(QObject):
-    finished = Signal(object)
-    failed = Signal(str)
-
-    def __init__(self, fn) -> None:  # noqa: ANN001
-        super().__init__()
-        self._fn = fn
-
-    def run(self) -> None:
-        try:
-            self.finished.emit(self._fn())
-        except (EngineNotReady, GenerationError, PipelineError, FileOpenError) as exc:
-            text = getattr(exc, "status_text", str(exc))
-            self.failed.emit(text)
-        except Exception as exc:  # noqa: BLE001
-            LOGGER.exception("worker failed: %s", exc)
-            self.failed.emit("处理失败，请再试一次。")
-
-
 class MainWindow(QWidget):
+    _job_finished = Signal(object)
+    _job_failed = Signal(str)
+
     def __init__(self, pipeline: Pipeline | None = None, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setObjectName("RootWindow")
         self.setWindowTitle(WINDOW_TITLE)
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Window)
-        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+        # A translucent frameless window plus a large result image has been
+        # aborting Qt6Core.dll on this machine. Keep the frame custom, but
+        # draw on an opaque background.
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, False)
         self.setMinimumSize(1100, 760)
         self.setAcceptDrops(True)
 
         self.pipeline = pipeline or Pipeline()
-        self._thread: QThread | None = None
-        self._worker: _Worker | None = None
+        self._work_thread: threading.Thread | None = None
+        self._job_on_ok = None
         self._maximized = False
         self._normal_geo = None
         self._resize_edge: str | None = None
         self._busy = False
+        self._job_finished.connect(self._on_job_finished, Qt.ConnectionType.QueuedConnection)
+        self._job_failed.connect(self._on_job_failed, Qt.ConnectionType.QueuedConnection)
 
         self._build()
         self._sync_chrome()
@@ -390,9 +381,13 @@ class MainWindow(QWidget):
             self.banner.show_message("模型加载失败，请再试一次。")
             self._sync_chrome()
             return
-        self._run_in_thread(self.pipeline.generate, on_ok=self._on_generated, busy_text="正在生成…")
+        self._run_in_thread(lambda: self.pipeline.generate(auto_patch=False), on_ok=self._on_generated, busy_text="正在生成…")
 
     def _on_generated(self, path: Path) -> None:
+        # Give the GPU and the window a moment after the CUDA process exits.
+        QTimer.singleShot(400, lambda p=Path(path): self._present_result(p))
+
+    def _present_result(self, path: Path) -> None:
         self._show_result(path)
         self.feedback.set_selection(None)
         self.feedback.setVisible(True)
@@ -472,43 +467,43 @@ class MainWindow(QWidget):
     # ----- worker -----
 
     def _run_in_thread(self, fn, *, on_ok, busy_text: str) -> None:  # noqa: ANN001
-        if self._thread is not None:
+        if self._work_thread is not None and self._work_thread.is_alive():
             return
         self._set_busy(True, busy_text)
-        thread = QThread(self)
-        worker = _Worker(fn)
-        worker.moveToThread(thread)
-        thread.started.connect(worker.run)
+        self._job_on_ok = on_ok
 
-        def ok(result) -> None:  # noqa: ANN001
-            self._teardown_worker()
-            self._set_busy(False)
+        def work() -> None:
+            try:
+                self._job_finished.emit(fn())
+            except (EngineNotReady, GenerationError, PipelineError, FileOpenError) as exc:
+                self._job_failed.emit(getattr(exc, "status_text", str(exc)))
+            except Exception as exc:  # noqa: BLE001
+                LOGGER.exception("worker failed: %s", exc)
+                self._job_failed.emit("处理失败，请再试一次。")
+
+        thread = threading.Thread(target=work, daemon=True)
+        self._work_thread = thread
+        thread.start()
+
+    def _on_job_finished(self, result) -> None:  # noqa: ANN001
+        self._work_thread = None
+        # Release the CUDA process before touching the window. Showing a
+        # result while the child still holds the GPU has been aborting
+        # Qt6Core.dll on this machine.
+        self.pipeline.release_engine()
+        self._set_busy(False)
+        on_ok = self._job_on_ok
+        self._job_on_ok = None
+        if on_ok is not None:
             on_ok(result)
 
-        def fail(message: str) -> None:
-            self._teardown_worker()
-            self._set_busy(False)
-            self.banner.show_message(message)
-            self._sync_chrome()
-
-        worker.finished.connect(ok, Qt.ConnectionType.QueuedConnection)
-        worker.failed.connect(fail, Qt.ConnectionType.QueuedConnection)
-        thread.start()
-        self._thread = thread
-        self._worker = worker
-
-    def _teardown_worker(self) -> None:
-        thread, worker = self._thread, self._worker
-        self._thread = None
-        self._worker = None
-        if worker is not None:
-            worker.deleteLater()
-        if thread is None:
-            return
-        thread.quit()
-        if QThread.currentThread() != thread:
-            thread.wait(5000)
-        thread.deleteLater()
+    def _on_job_failed(self, message: str) -> None:
+        self._work_thread = None
+        self._job_on_ok = None
+        self.pipeline.release_engine()
+        self._set_busy(False)
+        self.banner.show_message(message)
+        self._sync_chrome()
 
     def _set_busy(self, busy: bool, text: str = "正在重画…") -> None:
         self._busy = busy
@@ -537,25 +532,29 @@ class MainWindow(QWidget):
         super().resizeEvent(event)
 
     def closeEvent(self, event) -> None:  # noqa: ANN001
-        if self._thread is not None:
-            self._thread.quit()
-            self._thread.wait(1000)
+        thread = self._work_thread
+        if thread is not None and thread.is_alive():
+            thread.join(1.0)
         super().closeEvent(event)
 
 
 def _preview_pixmap(path: Path, max_edge: int = 2048) -> QPixmap:
     """Load a display copy so a huge photo cannot blow up the window."""
-    pixmap = QPixmap(str(path))
-    if pixmap.isNull():
-        return pixmap
-    if max(pixmap.width(), pixmap.height()) > max_edge:
-        pixmap = pixmap.scaled(
+    try:
+        data = Path(path).read_bytes()
+    except OSError:
+        return QPixmap()
+    image = QImage()
+    if not image.loadFromData(data):
+        return QPixmap()
+    if max(image.width(), image.height()) > max_edge:
+        image = image.scaled(
             max_edge,
             max_edge,
             Qt.AspectRatioMode.KeepAspectRatio,
-            Qt.TransformationMode.SmoothTransformation,
+            Qt.TransformationMode.FastTransformation,
         )
-    return pixmap
+    return QPixmap.fromImage(image)
 
 
 def make_window(pipeline: Pipeline | None = None) -> MainWindow:

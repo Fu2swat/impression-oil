@@ -44,7 +44,10 @@ def stylesheet() -> str:
     font-family: {FONT_FAMILY};
     color: {t["text"]};
 }}
-QWidget#RootWindow, QWidget#Chrome {{
+QWidget#RootWindow {{
+    background-color: {t["window_bg"]};
+}}
+QWidget#Chrome {{
     background: transparent;
 }}
 QWidget#Canvas {{

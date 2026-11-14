@@ -8,6 +8,20 @@ The workbench shows the original photo on the left and the painting on the right
 
 This is not a filter or an “oil-painting shader.” It generates Impressionist oil paintings: environmental color, optical mixing, soft edges dissolving into the air, complementary-color shadows, with the composition locked to the source photo.
 
+## Interface and examples
+
+After you open the app, drop a photo in, or click **打开照片** (Open photo).
+
+![Start screen: drop a photo on the left, or click to open a local photo](docs/screenshots/ui-start.png)
+
+When generation finishes, the original is on the left and the painting on the right. Click **不满意** (Not satisfied) to review painting-quality gaps and scenery drift, then regenerate.
+
+![Side-by-side result, with the self-check and regenerate flow after Not satisfied](docs/screenshots/ui-review.png)
+
+Here is a real run on this computer: a ginkgo-leaf photo turned into an Impressionist oil painting.
+
+![Real-device example of a ginkgo-leaf photo: original on the left, generated Impressionist oil painting on the right](docs/screenshots/example-ginkgo.jpg)
+
 ## What kinds of images work
 
 This version is intended only for real photographs taken with a camera, such as portraits, landscapes, and everyday snapshots. Animation stills, illustrations, anime or cartoon images, comics, screenshots, and pictures that are already drawings are not a good fit and will usually come out looking clearly wrong.

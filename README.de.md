@@ -8,6 +8,20 @@ Die Arbeitsfläche zeigt links das Originalfoto und rechts das Gemälde. Klicken
 
 Das ist kein Filter und kein „Ölmalerei-Shader“. Es erzeugt impressionistische Ölgemälde: Umgebungsfarbe, optische Mischung, weiche Kanten, die sich in die Luft auflösen, komplementäre Schatten. Die Komposition bleibt am Ausgangsfoto festgemacht.
 
+## Oberfläche und Beispiele
+
+Öffnen Sie das Programm und ziehen Sie ein Foto hinein, oder klicken Sie auf **打开照片** (Foto öffnen).
+
+![Startansicht: Foto links ablegen oder eine lokale Datei öffnen](docs/screenshots/ui-start.png)
+
+Nach der Erzeugung steht links das Original und rechts das Gemälde. Mit **不满意** (Unzufrieden) prüft das Programm Abweichungen in der Malweise und verrutschte Landschaft und erzeugt das Bild neu.
+
+![Vergleichsansicht nach der Erzeugung, mit Selbstprüfung und erneutem Erzeugen bei „Unzufrieden“](docs/screenshots/ui-review.png)
+
+Hier ein echter Durchlauf auf diesem Rechner: ein Foto mit Ginkgoblättern wird zu einem impressionistischen Ölgemälde.
+
+![Beispiel vom Rechner mit einem Ginkgo-Foto: links das Original, rechts das erzeugte impressionistische Ölgemälde](docs/screenshots/example-ginkgo.jpg)
+
 ## Welche Bilder geeignet sind
 
 Diese Version eignet sich nur für echte Kamerafotos, etwa Porträts, Landschaften und Alltagsaufnahmen. Animationsbilder, Illustrationen, Anime- oder Cartoon-Bilder, Comics, Screenshots und bereits gezeichnete Bilder sind ungeeignet; das Ergebnis wirkt dann in der Regel deutlich verfehlt.

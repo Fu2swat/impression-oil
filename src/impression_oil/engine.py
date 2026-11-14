@@ -47,6 +47,9 @@ class ImageEngine(ABC):
     def unavailable_reason(self) -> str:
         return ENGINE_NOT_READY_MESSAGE
 
+    def prepare(self) -> None:
+        """Load weights on the calling thread. Default is a no-op."""
+
     @abstractmethod
     def generate(
         self,

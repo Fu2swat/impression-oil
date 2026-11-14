@@ -20,7 +20,12 @@ def setup_logging(level: int = logging.INFO) -> logging.Logger:
     logger.setLevel(level)
     logger.propagate = False
     log_path = logs_dir() / "impression-oil.log"
-    handler = RotatingFileHandler(
+    class _FlushingHandler(RotatingFileHandler):
+        def emit(self, record: logging.LogRecord) -> None:
+            super().emit(record)
+            self.flush()
+
+    handler = _FlushingHandler(
         log_path,
         maxBytes=1_000_000,
         backupCount=3,

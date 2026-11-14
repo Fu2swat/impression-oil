@@ -7,6 +7,7 @@ from pathlib import Path
 from PySide6.QtCore import QObject, QSize, QThread, Qt, Signal, Slot
 from PySide6.QtGui import QGuiApplication, QPixmap
 from PySide6.QtWidgets import (
+    QApplication,
     QFileDialog,
     QHBoxLayout,
     QLabel,
@@ -350,7 +351,7 @@ class MainWindow(QWidget):
         except PermissionError:
             self.banner.show_message("没有权限读取该文件。")
             return
-        pixmap = QPixmap(str(path))
+        pixmap = _preview_pixmap(path)
         if pixmap.isNull():
             self.banner.show_message("无法打开该图片，文件可能已损坏。")
             return
@@ -377,6 +378,16 @@ class MainWindow(QWidget):
                 self.pipeline.generate()
             except EngineNotReady:
                 pass
+            self._sync_chrome()
+            return
+        self._set_busy(True, "正在加载模型…")
+        QApplication.processEvents()
+        try:
+            self.pipeline.prepare_engine()
+        except Exception as exc:  # noqa: BLE001
+            LOGGER.exception("failed to load local model: %s", exc)
+            self._set_busy(False)
+            self.banner.show_message("模型加载失败，请再试一次。")
             self._sync_chrome()
             return
         self._run_in_thread(self.pipeline.generate, on_ok=self._on_generated, busy_text="正在生成…")
@@ -439,7 +450,7 @@ class MainWindow(QWidget):
         self._sync_chrome()
 
     def _show_result(self, path: Path) -> None:
-        pixmap = QPixmap(str(path))
+        pixmap = _preview_pixmap(path)
         if pixmap.isNull():
             self.banner.show_message("无法打开生成结果。")
             return
@@ -490,13 +501,14 @@ class MainWindow(QWidget):
         thread, worker = self._thread, self._worker
         self._thread = None
         self._worker = None
-        if thread is not None:
-            thread.quit()
-            thread.wait(2000)
         if worker is not None:
             worker.deleteLater()
-        if thread is not None:
-            thread.deleteLater()
+        if thread is None:
+            return
+        thread.quit()
+        if QThread.currentThread() != thread:
+            thread.wait(5000)
+        thread.deleteLater()
 
     def _set_busy(self, busy: bool, text: str = "正在重画…") -> None:
         self._busy = busy
@@ -520,13 +532,8 @@ class MainWindow(QWidget):
             self._highlight_save(False)
 
     def resizeEvent(self, event) -> None:  # noqa: ANN001
-        from PySide6.QtCore import QRectF
-        from PySide6.QtGui import QPainterPath, QRegion
-
-        path = QPainterPath()
-        radius = 0 if self._maximized else 16
-        path.addRoundedRect(QRectF(self.rect()).adjusted(0.5, 0.5, -0.5, -0.5), radius, radius)
-        self.setMask(QRegion(path.toFillPolygon().toPolygon()))
+        # Do not call setMask() here: it can abort Qt on Windows during layout
+        # changes (for example when the generate button is replaced by the busy pill).
         super().resizeEvent(event)
 
     def closeEvent(self, event) -> None:  # noqa: ANN001
@@ -534,6 +541,21 @@ class MainWindow(QWidget):
             self._thread.quit()
             self._thread.wait(1000)
         super().closeEvent(event)
+
+
+def _preview_pixmap(path: Path, max_edge: int = 2048) -> QPixmap:
+    """Load a display copy so a huge photo cannot blow up the window."""
+    pixmap = QPixmap(str(path))
+    if pixmap.isNull():
+        return pixmap
+    if max(pixmap.width(), pixmap.height()) > max_edge:
+        pixmap = pixmap.scaled(
+            max_edge,
+            max_edge,
+            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation,
+        )
+    return pixmap
 
 
 def make_window(pipeline: Pipeline | None = None) -> MainWindow:

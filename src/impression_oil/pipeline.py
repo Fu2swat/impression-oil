@@ -71,6 +71,14 @@ class Pipeline:
     def engine_message(self) -> str:
         return self.engine.unavailable_reason()
 
+    def prepare_engine(self) -> None:
+        """Load local model weights on the current thread, if the engine supports it."""
+        prepare = getattr(self.engine, "prepare", None)
+        if callable(prepare):
+            LOGGER.info("preparing local engine")
+            prepare()
+            LOGGER.info("local engine ready")
+
     def can_generate(self) -> bool:
         return self.source_path is not None and self.state != AppState.GENERATING and self.state != AppState.REGENERATING
 

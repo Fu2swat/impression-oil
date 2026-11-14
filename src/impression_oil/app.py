@@ -10,6 +10,14 @@ from impression_oil.version import APP_NAME, WINDOW_TITLE, __version__
 
 def main(argv: list[str] | None = None) -> int:
     setup_logging()
+    try:
+        import faulthandler
+        from impression_oil.logging_setup import log_file_path
+
+        with log_file_path().open("a", encoding="utf-8") as fh:
+            faulthandler.enable(file=fh, all_threads=True)
+    except OSError:
+        pass
     args = list(sys.argv if argv is None else argv)
 
     from PySide6.QtCore import Qt

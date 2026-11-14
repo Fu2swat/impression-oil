@@ -56,6 +56,10 @@ class LocalDiffusersEngine(ImageEngine):
     def is_available(self) -> bool:
         return models_are_ready(self.models_directory)
 
+    def prepare(self) -> None:
+        """Load CUDA weights on the calling (UI) thread before a worker starts."""
+        self._ensure_pipeline()
+
     def unavailable_reason(self) -> str:
         if not models_are_ready(self.models_directory):
             return "本机模型不完整。请重新安装模型后再生成。"
@@ -78,7 +82,9 @@ class LocalDiffusersEngine(ImageEngine):
         except OSError as exc:
             raise GenerationError(f"无法打开照片：{source_path}") from exc
 
+        LOGGER.info("generating from %s", source_path)
         pipe = self._ensure_pipeline()
+        LOGGER.info("pipeline ready, starting img2img")
         prompt_text = _with_trigger(prompt, self._manifest.get("lora_trigger", "Monet Style"))
         strength = 0.52 if composition_lock else 0.68
         control_scale = 0.82 if composition_lock else 0.5
@@ -95,6 +101,7 @@ class LocalDiffusersEngine(ImageEngine):
         last_oom = None
         for max_edge, steps in ((768, 28), (512, 24)):
             working, work_size = _resize_for_model(source, max_edge=max_edge)
+            LOGGER.info("img2img at %sx%s, steps=%s", work_size[0], work_size[1], steps)
             try:
                 result = pipe(
                     prompt=prompt_text,

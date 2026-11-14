@@ -1,0 +1,6 @@
+# 运行时（0.0.1 不含本机扩散模型，也不安装 torch / diffusers）
+PySide6==6.8.3
+Pillow==11.0.0
+
+# 开发与测试
+pytest==8.3.5

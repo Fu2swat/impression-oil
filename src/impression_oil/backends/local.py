@@ -5,13 +5,19 @@ Weights must already be on disk. This module never starts a download.
 
 from __future__ import annotations
 
+import atexit
+import importlib.util
 import json
 import logging
+import os
+import subprocess
+import sys
+import threading
 import time
 from pathlib import Path
 
 from impression_oil.engine import GenerationError, ImageEngine
-from impression_oil.paths import outputs_dir
+from impression_oil.paths import outputs_dir, project_root
 
 LOGGER = logging.getLogger("impression_oil.backends.local")
 
@@ -37,12 +43,13 @@ def create_engine(models_dir: Path) -> ImageEngine | None:
     directory = Path(models_dir)
     if not models_are_ready(directory):
         return None
-    try:
-        import torch  # noqa: F401
-        from diffusers import ControlNetModel  # noqa: F401
-    except ImportError:
+    if os.environ.get("IMPRESSION_OIL_CUDA_WORKER") == "1":
+        return LocalDiffusersEngine(directory)
+    # The Qt UI process must not import torch. On this machine, running
+    # img2img inside the GUI process crashes Qt6Core.dll.
+    if importlib.util.find_spec("torch") is None or importlib.util.find_spec("diffusers") is None:
         return None
-    return LocalDiffusersEngine(directory)
+    return LocalEngineProxy(directory)
 
 
 class LocalDiffusersEngine(ImageEngine):
@@ -57,7 +64,7 @@ class LocalDiffusersEngine(ImageEngine):
         return models_are_ready(self.models_directory)
 
     def prepare(self) -> None:
-        """Load CUDA weights on the calling (UI) thread before a worker starts."""
+        """Load CUDA weights in this process."""
         self._ensure_pipeline()
 
     def unavailable_reason(self) -> str:
@@ -209,3 +216,154 @@ def _resize_for_model(image, max_edge: int = 768):
     if (new_w, new_h) != (width, height):
         image = image.resize((new_w, new_h), PILImage.Resampling.LANCZOS)
     return image, (new_w, new_h)
+
+class LocalEngineProxy(ImageEngine):
+    """Talks to a child process that owns torch / CUDA."""
+
+    def __init__(self, models_directory: Path) -> None:
+        self.models_directory = Path(models_directory)
+        self._proc: subprocess.Popen[str] | None = None
+        self._lock = threading.Lock()
+        atexit.register(self.close)
+
+    def is_available(self) -> bool:
+        return models_are_ready(self.models_directory)
+
+    def unavailable_reason(self) -> str:
+        if not models_are_ready(self.models_directory):
+            return "本机模型不完整。请重新安装模型后再生成。"
+        return "本机模型的运行库还没装好，暂时不能出图。"
+
+    def prepare(self) -> None:
+        self._rpc({"cmd": "prepare"}, timeout=180)
+
+    def generate(
+        self,
+        source_path: Path,
+        prompt: str,
+        negative_prompt: str,
+        composition_lock: bool = True,
+    ) -> Path:
+        data = self._rpc(
+            {
+                "cmd": "generate",
+                "source": str(source_path),
+                "prompt": prompt or "",
+                "negative_prompt": negative_prompt or "",
+                "composition_lock": bool(composition_lock),
+            },
+            timeout=300,
+        )
+        path = Path(data.get("path") or "")
+        if not path.is_file():
+            raise GenerationError("出图进程没有返回结果文件。")
+        return path
+
+    def close(self) -> None:
+        proc = self._proc
+        self._proc = None
+        if proc is None or proc.poll() is not None:
+            return
+        try:
+            if proc.stdin:
+                proc.stdin.write(json.dumps({"cmd": "quit"}) + "\n")
+                proc.stdin.flush()
+        except OSError:
+            pass
+        try:
+            proc.wait(timeout=8)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+
+    def _ensure_worker(self) -> None:
+        if self._proc is not None and self._proc.poll() is None:
+            return
+        python = Path(sys.executable)
+        if python.name.lower() == "pythonw.exe":
+            cand = python.with_name("python.exe")
+            if cand.is_file():
+                python = cand
+        env = os.environ.copy()
+        src = str(project_root() / "src")
+        env["PYTHONPATH"] = src + os.pathsep + env.get("PYTHONPATH", "")
+        env["IMPRESSION_OIL_CUDA_WORKER"] = "1"
+        env["PYTHONUNBUFFERED"] = "1"
+        flags = 0
+        if sys.platform.startswith("win"):
+            flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+        LOGGER.info("starting cuda worker: %s", python)
+        self._proc = subprocess.Popen(
+            [str(python), "-u", "-m", "impression_oil.backends.cuda_worker"],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            cwd=str(project_root()),
+            env=env,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            creationflags=flags,
+        )
+        threading.Thread(target=self._drain_stderr, daemon=True).start()
+        hello = self._read_json(timeout=60)
+        if not hello.get("ok"):
+            self.close()
+            raise GenerationError(hello.get("error") or "出图进程启动失败。")
+
+    def _drain_stderr(self) -> None:
+        proc = self._proc
+        if proc is None or proc.stderr is None:
+            return
+        for line in proc.stderr:
+            text = line.rstrip()
+            if text:
+                LOGGER.info("cuda worker: %s", text)
+
+    def _rpc(self, payload: dict, timeout: int) -> dict:
+        with self._lock:
+            self._ensure_worker()
+            proc = self._proc
+            if proc is None or proc.stdin is None:
+                raise GenerationError("出图进程不可用。")
+            try:
+                proc.stdin.write(json.dumps(payload, ensure_ascii=False) + "\n")
+                proc.stdin.flush()
+            except OSError as exc:
+                raise GenerationError("无法与出图进程通信。") from exc
+            data = self._read_json(timeout=timeout)
+            if not data.get("ok"):
+                raise GenerationError(data.get("error") or "出图进程返回失败。")
+            return data
+
+    def _read_json(self, timeout: int) -> dict:
+        proc = self._proc
+        if proc is None or proc.stdout is None:
+            raise GenerationError("出图进程不可用。")
+        result: dict | None = None
+        error: Exception | None = None
+
+        def _reader() -> None:
+            nonlocal result, error
+            try:
+                while True:
+                    line = proc.stdout.readline()
+                    if line == "":
+                        code = proc.poll()
+                        raise GenerationError(f"出图进程已退出（代码 {code}）。")
+                    text = line.strip()
+                    if text.startswith("{") and text.endswith("}"):
+                        result = json.loads(text)
+                        return
+            except Exception as exc:  # noqa: BLE001
+                error = exc
+
+        thread = threading.Thread(target=_reader, daemon=True)
+        thread.start()
+        thread.join(timeout)
+        if thread.is_alive():
+            raise GenerationError("出图进程超时，这次没有完成。")
+        if error is not None:
+            raise GenerationError(str(error)) from error
+        if result is None:
+            raise GenerationError("出图进程没有返回结果。")
+        return result

@@ -288,6 +288,8 @@ class LocalEngineProxy(ImageEngine):
         env["PYTHONPATH"] = src + os.pathsep + env.get("PYTHONPATH", "")
         env["IMPRESSION_OIL_CUDA_WORKER"] = "1"
         env["PYTHONUNBUFFERED"] = "1"
+        env["PYTHONUTF8"] = "1"
+        env["PYTHONIOENCODING"] = "utf-8"
         flags = 0
         if sys.platform.startswith("win"):
             flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
@@ -326,7 +328,7 @@ class LocalEngineProxy(ImageEngine):
             if proc is None or proc.stdin is None:
                 raise GenerationError("出图进程不可用。")
             try:
-                proc.stdin.write(json.dumps(payload, ensure_ascii=False) + "\n")
+                proc.stdin.write(json.dumps(payload, ensure_ascii=True) + "\n")
                 proc.stdin.flush()
             except OSError as exc:
                 raise GenerationError("无法与出图进程通信。") from exc

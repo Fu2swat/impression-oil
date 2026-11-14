@@ -30,6 +30,7 @@ def setup_logging(level: int = logging.INFO) -> logging.Logger:
         maxBytes=1_000_000,
         backupCount=3,
         encoding="utf-8",
+        errors="replace",
     )
     handler.setFormatter(
         logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")

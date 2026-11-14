@@ -12,14 +12,28 @@ import os
 import sys
 
 os.environ["IMPRESSION_OIL_CUDA_WORKER"] = "1"
+os.environ.setdefault("PYTHONUTF8", "1")
+os.environ.setdefault("PYTHONIOENCODING", "utf-8")
+
+
+def _configure_stdio() -> None:
+    for stream in (sys.stdin, sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is None:
+            continue
+        try:
+            reconfigure(encoding="utf-8", errors="replace")
+        except (OSError, ValueError):
+            pass
 
 
 def _reply(payload: dict) -> None:
-    sys.stdout.write(json.dumps(payload, ensure_ascii=False) + "\n")
+    sys.stdout.write(json.dumps(payload, ensure_ascii=True) + "\n")
     sys.stdout.flush()
 
 
 def main() -> int:
+    _configure_stdio()
     from impression_oil.logging_setup import get_logger, setup_logging
     from impression_oil.paths import models_dir
 
@@ -55,10 +69,10 @@ def main() -> int:
                 _reply({"ok": True})
                 continue
             if cmd == "generate":
-                from pathlib import Path
+                from pathlib import Path as FilePath
 
                 path = engine.generate(
-                    source_path=Path(job["source"]),
+                    source_path=FilePath(job["source"]),
                     prompt=job.get("prompt") or "",
                     negative_prompt=job.get("negative_prompt") or "",
                     composition_lock=bool(job.get("composition_lock", True)),

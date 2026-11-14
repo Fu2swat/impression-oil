@@ -93,7 +93,7 @@ set HF_ENDPOINT=https://hf-mirror.com
 python scripts/install_local_model.py
 ```
 
-Das ist nur einmal nötig. Danach funktioniert die Erzeugung offline. Beim ersten Klick auf **生成油画** in der Anwendung kann das Laden der Modelle etwa eine Minute dauern; spätere Läufe sind deutlich schneller.
+Das ist nur einmal nötig. Danach funktioniert die Erzeugung offline. Beim ersten Klick auf **生成油画** in der Anwendung kann das Laden der Modelle etwa eine Minute dauern; spätere Läufe sind deutlich schneller. Das Laden der Modelle und das Erzeugen des Ölgemäldes braucht etwas Zeit; bitte haben Sie Geduld.
 
 ## Starten
 
@@ -116,7 +116,7 @@ python -m impression_oil
 ## So funktionieren „Zufrieden“ und „Unzufrieden“
 
 1. Öffnen oder ziehen Sie ein lokales JPG-/PNG-Foto (JPEG und WebP werden ebenfalls unterstützt).
-2. Klicken Sie in der Mitte auf **生成油画**. Sind die lokalen Modelle noch nicht installiert, erscheint ein Hinweis, der die Arbeit nicht unterbricht; der Rest der Oberfläche bleibt nutzbar.
+2. Klicken Sie in der Mitte auf **生成油画**. Das Laden der Modelle und das Erzeugen des Ölgemäldes braucht etwas Zeit; bitte haben Sie Geduld. Sind die lokalen Modelle noch nicht installiert, erscheint ein Hinweis, der die Arbeit nicht unterbricht; der Rest der Oberfläche bleibt nutzbar.
 3. Nach der Erzeugung erscheinen unter dem Ergebnis **满意** (Zufrieden) und **不满意** (Unzufrieden).
 4. Klicken Sie auf **满意**: Das Ergebnis gilt als angenommen, und Sie können oben rechts auf **保存** (Speichern) klicken. Wurde noch nicht gespeichert, bleibt Speichern als Erinnerung verfügbar. Es wird nichts automatisch hochgeladen.
 5. Klicken Sie auf **不满意**: Das Programm prüft das Ergebnis sofort am Ausgangsfoto (verklumpter Himmel, tote Lokalfarbe, harte ferne Berge, blumenfeldartige Stempel, Figuren wie aus einer Illustration, verrutschte Landschaft oder Komposition). Unten öffnet sich der Hinweis, dass nach der Korrekturliste geprüft und neu gemalt wird, in der Mitte steht „wird neu gemalt…“, und das ganze Bild wird mit Korrekturhinweisen erneut erzeugt (die verbesserte Malweise bleibt erhalten, verlorene oder verschobene Landschaft wird wieder an das Original gebunden). Wählen Sie erneut, wenn das neue Ergebnis da ist, bis Sie zufrieden sind.

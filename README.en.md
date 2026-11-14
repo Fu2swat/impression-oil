@@ -93,7 +93,7 @@ set HF_ENDPOINT=https://hf-mirror.com
 python scripts/install_local_model.py
 ```
 
-You only need to do this once. After that, generation works offline. The first time you click **生成油画** in the app, loading the models may take about a minute; later runs are much faster.
+You only need to do this once. After that, generation works offline. The first time you click **生成油画** in the app, loading the models may take about a minute; later runs are much faster. Loading the models and generating the oil painting takes some time; please wait patiently.
 
 ## Launch
 
@@ -116,7 +116,7 @@ python -m impression_oil
 ## How “Satisfied” and “Not satisfied” work
 
 1. Open or drop a local JPG / PNG photo (JPEG and WebP are also supported).
-2. Click **生成油画** in the middle. If the local models are not installed yet, you will see a non-blocking notice; the rest of the interface still works.
+2. Click **生成油画** in the middle. Loading the models and generating the oil painting takes some time; please wait patiently. If the local models are not installed yet, you will see a non-blocking notice; the rest of the interface still works.
 3. After generation, **满意** (Satisfied) and **不满意** (Not satisfied) appear under the result.
 4. Click **满意**: the result is marked as accepted, and you can click **保存** (Save) in the top right. If you have not saved yet, Save stays available as a reminder. Nothing is uploaded automatically.
 5. Click **不满意**: the app immediately reviews the result against the source (clumpy sky, dead local color, hard-edged distant mountains, stamped flower fields, illustration-like figures, scenery or composition drift). The footer expands to “reviewed with the patch checklist, regenerating,” the center shows “regenerating…,” and the whole image is painted again with patch prompts (keeping improved technique, while locking any lost or shifted scenery back to the source). Choose again when the new result appears, until you are satisfied.
